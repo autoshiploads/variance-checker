@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Variance Checker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      padding: 40px;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #output, #output * {
+        visibility: visible;
+      }
+      #output {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 40px;
+      }
+    }
+
+    h1 {
+      color: #2c3e50;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      color: #2980b9;
+      margin-top: 40px;
+    }
+
+    p {
+      font-size: 1rem;
+      margin-bottom: 20px;
+    }
+
+    input[type="file"] {
+      padding: 10px;
+      border: 2px dashed #ccc;
+      border-radius: 5px;
+      background: white;
+      width: 100%;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 30px;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border: 1px solid #e1e1e1;
+      padding: 12px;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    th {
+      background-color: #f1f1f1;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background-color: #fafafa;
+    }
+
+    #output p {
+      font-style: italic;
+      color: #999;
+    }
+
+    #logBox {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 30px;
+      border-radius: 5px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Variance Checker</h1>
+  <p>Upload your Excel file (.xls or .xlsx) to view significant variances.</p>
+
+  <!-- File upload and print button -->
+  <input type="file" id="fileInput" accept=".xls,.xlsx">
+  <button id="printBtn">Print Results</button>
+
+  <!-- Processing log -->
+  <div id="logBox">Awaiting file upload...</div>
+
+  <!-- Placeholder for displaying output tables -->
+  <div id="output"></div>
+
+  <!-- XLSX library for reading Excel files in browser -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const logBox = document.getElementById('logBox');
+
+    function log(message) {
+      logBox.innerHTML += `\n- ${message}`;
+      logBox.scrollTop = logBox.scrollHeight;
+
+    }
+
+    document.getElementById('fileInput').addEventListener('change', handleFile);
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+    function handleFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      logBox.innerHTML = `Processing file: ${file.name}`;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        log(`Loaded sheet: ${sheetName}`);
+        const sheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(sheet);
+        log(`Parsed ${json.length} rows from sheet.`);
+
+        const check1 = [];
+        const check2 = [];
+
+        json.forEach((row, i) => {
+          if (!row['Description'] || !row['Product Code']) return;
+
+          const unitVar = parseFloat(row['Var.']) || 0;
+          const dollarVar = parseFloat(row['Value.1']) || 0;
+
+
+          if (Math.abs(dollarVar) >= 100 || Math.abs(unitVar) >= 50) {
+            check1.push(row);
+          } else if (Math.abs(dollarVar) >= 50 || Math.abs(unitVar) >= 24) {
+            check2.push(row);
+          } else {
+
+          }
+        });
+
+        log(`Found ${check1.length} rows for Variance Check #1.`);
+        log(`Found ${check2.length} rows for Variance Check #2.`);
+
+        const outputDiv = document.getElementById('output');
+        outputDiv.innerHTML = `
+          <h2>Variance Check #1</h2>
+          ${generateTable(check1)}
+          <h2>Variance Check #2</h2>
+          ${generateTable(check2)}
+        `;
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    function generateTable(data) {
+      if (!data.length) return '<p>No matching items.</p>';
+
+      const headers = ["Product Code", "Description", "Expect", "Count", "Var.", "Value.1"];
+
+      const rows = data.map(row => `
+        <tr>${headers.map(h => `<td>${row[h] ?? ''}</td>`).join('')}</tr>
+      `).join('');
+
+      return `
+        <table>
+          <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+  </script>
+</body>
+</html>
