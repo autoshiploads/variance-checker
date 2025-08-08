@@ -1,160 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Variance Checker</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #f8f9fa;
-      color: #333;
-      padding: 40px;
-      max-width: 1000px;
-      margin: auto;
-    }
+    :root { --brand:#3498db; --brand-dark:#2980b9; --border:#ccc; --bg:#f8f9fa; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:#333; padding:40px; max-width:1000px; margin:auto; }
 
+    /* PRINT: only print the results/signoff */
     @media print {
-      body * {
-        visibility: hidden;
-      }
-      #output, #output * {
-        visibility: visible;
-      }
-      #output {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 90%;
-        padding: 40px;
-      }
-      #clearSignatureBtn {
-        display: none;
-      }
-  #signatureCanvas {
-    width: 30% !important;
-    max-width: 300px;
-    min-width: 200px;
-  }
+      body * { visibility:hidden; }
+      #output, #output * { visibility:visible; }
+      #output { position:absolute; left:0; top:0; width:90%; padding:40px; }
+      #clearSignatureBtn, #resetBtn { display:none; }
+      #signatureCanvas { width:30% !important; max-width:300px; min-width:200px; }
     }
 
     @media (max-width: 768px) {
-      #signatureCanvas {
-        width: 100% !important;
-      }
+      #signatureCanvas { width:100% !important; }
     }
 
-    h1 {
-      color: #2c3e50;
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-    }
+    h1 { color:#2c3e50; font-size:2.2rem; margin:0 0 10px; }
+    h2 { color:#2980b9; margin-top:30px; }
+    p { margin:0 0 16px; }
 
-    h2 {
-      color: #2980b9;
-      margin-top: 40px;
-    }
+    /* Uploader */
+    .uploader { border:2px dashed var(--border); background:#fff; border-radius:10px; padding:24px; text-align:center; cursor:pointer; transition: border-color .2s, background .2s; }
+    .uploader:hover { border-color:var(--brand); background:#fff; }
+    .uploader.dragover { border-color:var(--brand); background:#eef6ff; }
+    .uploader .hint { font-size:.95rem; color:#555; }
+    .uploader .types { font-size:.85rem; color:#777; }
+    #fileInput { display:none; }
 
-    p {
-      font-size: 1rem;
-      margin-bottom: 20px;
-    }
+    .controls { display:flex; gap:12px; align-items:center; margin:16px 0 24px; }
+    .btn { background:var(--brand); color:#fff; padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-size:0.95rem; }
+    .btn:hover { background:var(--brand-dark); }
+    .btn.secondary { background:#e9ecef; color:#333; }
+    .btn.secondary:hover { background:#dfe4ea; }
 
-    input[type="file"] {
-      padding: 10px;
-      border: 2px dashed #ccc;
-      border-radius: 5px;
-      background: white;
-      width: 100%;
-      margin-bottom: 20px;
-      cursor: pointer;
-    }
+    .file-meta { font-size:.9rem; color:#555; }
+    .error { color:#b00020; font-weight:600; margin-top:8px; }
+    .loading { display:inline-block; width:16px; height:16px; border:2px solid #ddd; border-top-color:var(--brand); border-radius:50%; animation:spin 1s linear infinite; vertical-align:middle; margin-right:8px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
 
-    input[type="checkbox"] {
-      margin-right: 8px;
-    }
+    table { border-collapse:collapse; width:100%; margin-top:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05); background:#fff; border-radius:8px; overflow:hidden; }
+    th, td { border:1px solid #e1e1e1; padding:12px; text-align:left; font-size:.95rem; }
+    th { background:#f1f1f1; font-weight:600; }
+    tr:nth-child(even) { background:#fafafa; }
 
-    button {
-      background-color: #3498db;
-      color: white;
-      padding: 10px 20px;
-      font-size: 1rem;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-bottom: 30px;
-    }
+    #logBox { background:#fff; border:1px solid #ccc; padding:10px; margin:16px 0 24px; border-radius:5px; max-height:200px; overflow:auto; font-size:.9rem; color:#555; white-space:pre-wrap; }
 
-    button:hover {
-      background-color: #2980b9;
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    th, td {
-      border: 1px solid #e1e1e1;
-      padding: 12px;
-      text-align: left;
-      font-size: 0.95rem;
-    }
-
-    th {
-      background-color: #f1f1f1;
-      font-weight: 600;
-    }
-
-    tr:nth-child(even) {
-      background-color: #fafafa;
-    }
-
-    #output p {
-      font-style: italic;
-      color: #999;
-    }
-
-    #logBox {
-      background: #fff;
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-bottom: 30px;
-      border-radius: 5px;
-      max-height: 200px;
-      overflow-y: auto;
-      font-size: 0.9rem;
-      color: #555;
-    }
-
-    #signoff {
-      margin-top: 40px;
-      border-top: 1px solid #ccc;
-      padding-top: 20px;
-    }
-
-    #signatureCanvas {
-      border: 2px dashed #ccc;
-      width: 30%;
-      height: 150px;
-      margin-top: 10px;
-      cursor: crosshair;
-      touch-action: none;
-    }
+    #signoff { margin-top:28px; border-top:1px solid #ccc; padding-top:16px; }
+    #signatureCanvas { border:2px dashed #ccc; width:30%; height:150px; margin-top:10px; cursor:crosshair; touch-action:none; }
   </style>
 </head>
 <body>
   <h1>Variance Checker</h1>
   <p>Upload your Excel file (.xls or .xlsx) to view significant variances.</p>
 
-  <input type="file" id="fileInput" accept=".xls,.xlsx">
-  <button id="printBtn">Print Results</button>
+  <!-- Improved Uploader -->
+  <div id="uploader" class="uploader" tabindex="0" role="button" aria-label="Upload Excel file">
+    <div class="hint"><strong>Drag & drop</strong> your file here, or <u>click to browse</u></div>
+    <div class="types">Accepted: .xls, .xlsx</div>
+    <input type="file" id="fileInput" accept=".xls,.xlsx" />
+  </div>
+
+  <div class="controls">
+    <button id="printBtn" class="btn">Print Results</button>
+    <button id="resetBtn" class="btn secondary" type="button">Reset</button>
+    <span id="fileMeta" class="file-meta"></span>
+  </div>
 
   <div id="logBox">Awaiting file upload...</div>
   <div id="output"></div>
@@ -162,138 +79,169 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     const logBox = document.getElementById('logBox');
+    const outputDiv = document.getElementById('output');
+    const fileMeta = document.getElementById('fileMeta');
+    const uploader = document.getElementById('uploader');
+    const fileInput = document.getElementById('fileInput');
 
-    function log(message) {
-      logBox.innerHTML += `\n- ${message}`;
-      logBox.scrollTop = logBox.scrollHeight;
-      console.log(message);
-    }
+    const log = (msg) => { logBox.textContent += `\n- ${msg}`; logBox.scrollTop = logBox.scrollHeight; console.log(msg); };
+    const setLoading = (isLoading) => {
+      if (isLoading) { logBox.textContent += "\n"; logBox.innerHTML += '<span class="loading"></span> Parsing...'; }
+    };
 
-    document.getElementById('fileInput').addEventListener('change', handleFile);
+    // Uploader interactions
+    uploader.addEventListener('click', () => fileInput.click());
+    uploader.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+    uploader.addEventListener('dragover', (e) => { e.preventDefault(); uploader.classList.add('dragover'); });
+    uploader.addEventListener('dragleave', () => uploader.classList.remove('dragover'));
+    uploader.addEventListener('drop', (e) => { e.preventDefault(); uploader.classList.remove('dragover'); if (e.dataTransfer.files && e.dataTransfer.files[0]) { handleFile({ target:{ files:e.dataTransfer.files } }); } });
+
+    fileInput.addEventListener('change', handleFile);
     document.getElementById('printBtn').addEventListener('click', () => window.print());
+    document.getElementById('resetBtn').addEventListener('click', resetAll);
+
+    function resetAll(){
+      fileInput.value = ''; fileMeta.textContent=''; outputDiv.innerHTML=''; logBox.textContent='Awaiting file upload...';
+    }
 
     function handleFile(event) {
       const file = event.target.files[0];
       if (!file) return;
-      logBox.innerHTML = `Processing file: ${file.name}`;
+      // Validate extension
+      if (!(/\.(xls|xlsx)$/i.test(file.name))) { log('❌ Unsupported file type. Please upload .xls or .xlsx'); return; }
+
+      logBox.textContent = `Processing file: ${file.name}`;
+      fileMeta.textContent = `${file.name} • ${(file.size/1024).toFixed(1)} KB`;
+      setLoading(true);
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        log(`Loaded sheet: ${sheetName}`);
-        const sheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(sheet);
-        log(`Parsed ${json.length} rows from sheet.`);
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          log(`Loaded sheet: ${sheetName}`);
+          const sheet = workbook.Sheets[sheetName];
 
-        const check1 = [];
-        const check2 = [];
+          // Ensure blank cells are "" so keys always exist
+          const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+          if (!json.length) { log('No rows found.'); return; }
 
-        json.forEach((row, i) => {
-          if (!row['Description'] || !row['Product Code']) return;
-          const unitVar = parseFloat(row['Var.']) || 0;
-          const dollarVar = parseFloat(row['Value.1']) || 0;
-          if (Math.abs(dollarVar) >= 100 || Math.abs(unitVar) >= 50) check1.push(row);
-          else if (Math.abs(dollarVar) >= 50 || Math.abs(unitVar) >= 24) check2.push(row);
-        });
+          // --- Robust column detection ---
+          const keys = Object.keys(json[0]);
+          const norm = s => String(s).trim().toLowerCase();
+          const findKey = (cands) => keys.find(k => cands.includes(norm(k)));
 
-        log(`Found ${check1.length} rows for Variance Check #1.`);
-        log(`Found ${check2.length} rows for Variance Check #2.`);
+          const valueKey = findKey(['Value_1']) || 'Value_1';
+          const unitKey  = findKey(['Var.']) || 'Var.';
+          const pluKey   = findKey(['Product Code']) || 'Product Code';
+          const descKey  = findKey(['Description']) || 'Description';
+          const expectKey= findKey(['Expect']) || 'Expect';
+          const countKey = findKey(['Count']) || 'Count';
 
-        const outputDiv = document.getElementById('output');
-        outputDiv.innerHTML = `
-          <h2>Variance Check #1</h2>
-          ${generateTable(check1)}
-          <h2>Variance Check #2</h2>
-          ${generateTable(check2)}
-          <div id="signoff">
-            <p><em>You can sign digitally below or leave blank and sign manually after printing.</em></p>
-            <label><input type="checkbox"> By signing you confirm you have checked all above variances</label>
-            <br><br>
-            <label>Signature:</label><br>
-            <canvas id="signatureCanvas"></canvas>
-            <br>
-            <button id="clearSignatureBtn" onclick="clearSignature()">Clear Signature</button>
-          </div>
-        `;
+          log(`Using columns -> $Var: "${valueKey}", UnitsVar: "${unitKey}", PLU: "${pluKey}", Desc: "${descKey}"`);
 
-        initSignatureCanvas();
+          const toNumber = (v) => {
+            if (v === null || v === undefined) return 0;
+            if (typeof v === 'number') return v;
+            const cleaned = String(v).replace(/[^0-9.-]+/g,'');
+            const n = parseFloat(cleaned); return isNaN(n) ? 0 : n;
+          };
+
+          // --- Variance Check (ONLY #2): $50+ OR 24+ units ---
+          const results = [];
+          json.forEach((row, i) => {
+            if (!row[descKey] || !row[pluKey]) return; // ignore incomplete rows
+            const unitVar = toNumber(row[unitKey]);
+            const dollarVar = toNumber(row[valueKey]);
+            const meetsDollar = Math.abs(dollarVar) >= 50;
+            const meetsUnits  = Math.abs(unitVar) >= 24;
+            if (meetsDollar || meetsUnits) {
+              results.push({ row, unitVar, dollarVar, meetsDollar, meetsUnits });
+            }
+          });
+
+          log(`Found ${results.length} rows for Variance Check.`);
+
+          // Render single table: Product Code, Description, Expect, Count, Var.
+          outputDiv.innerHTML = `
+            <h2>Variance Check</h2>
+            ${generateTable(results, {pluKey, descKey, expectKey, countKey})}
+            <div id="signoff">
+              <p><em>You can sign digitally below or leave blank and sign manually after printing.</em></p>
+              <label><input type="checkbox"> By signing you confirm you have checked all above variances</label>
+              <br/><br/>
+              <label>Signature:</label><br/>
+              <canvas id="signatureCanvas"></canvas>
+              <br/>
+              <button id="clearSignatureBtn" class="btn secondary" onclick="clearSignature()">Clear Signature</button>
+            </div>
+          `;
+
+          initSignatureCanvas();
+        } catch (err) {
+          console.error(err); log('❌ Failed to read file. Make sure it\'s a valid Excel file.');
+        }
       };
+      reader.onerror = () => log('❌ File read error.');
       reader.readAsArrayBuffer(file);
     }
 
-    function generateTable(data) {
-      if (!data.length) return '<p>No matching items.</p>';
-      const headers = ["Product Code", "Description", "Expect", "Count", "Var.", "Value.1"];
-      const rows = data.map(row => `<tr>${headers.map(h => `<td>${row[h] ?? ''}</td>`).join('')}</tr>`).join('');
-      return `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+    function generateTable(items, col) {
+      if (!items.length) return '<p>No matching items.</p>';
+
+      const headerHtml = ['Product Code','Description','Expect','Count','Variance ($ | Units)', 'Checked?']
+        .map(h => `<th>${h}</th>`).join('');
+
+      const rowsHtml = items.map(({row, unitVar, dollarVar, meetsDollar, meetsUnits}) => {
+        // Compose Var. display
+        const parts = [];
+        if (meetsDollar) parts.push(`${dollarVar < 0 ? '-' : '+'}$${Math.abs(dollarVar).toFixed(2)}`);
+        if (meetsUnits)  parts.push(`${unitVar > 0 ? '+' : ''}${unitVar} units`);
+        const varDisplay = parts.join(' | ');
+
+        return `<tr>
+          <td>${row[col.pluKey] ?? ''}</td>
+          <td>${row[col.descKey] ?? ''}</td>
+          <td>${row[col.expectKey] ?? ''}</td>
+          <td>${row[col.countKey] ?? ''}</td>
+          <td>${varDisplay}</td>
+          <td><input type="checkbox"></td>
+        </tr>`;
+      }).join('');
+
+      return `<table><thead><tr>${headerHtml}</tr></thead><tbody>${rowsHtml}</tbody></table>`;
     }
 
-    function initSignatureCanvas() {
+    // Signature pad (mouse + touch; left-click only on desktop)
+    function initSignatureCanvas(){
       const canvas = document.getElementById('signatureCanvas');
       const ctx = canvas.getContext('2d');
       let drawing = false;
 
-      const getPosition = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        if (e.touches) {
-          return {
-            x: e.touches[0].clientX - rect.left,
-            y: e.touches[0].clientY - rect.top
-          };
-        } else {
-          return {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
-          };
-        }
+      const getPos = (e) => {
+        const r = canvas.getBoundingClientRect();
+        if (e.touches) return { x:e.touches[0].clientX - r.left, y:e.touches[0].clientY - r.top };
+        return { x:e.clientX - r.left, y:e.clientY - r.top };
       };
 
-      canvas.addEventListener('mousedown', (e) => {
-        if (e.button !== 0) return;
-        drawing = true;
-        ctx.beginPath();
-      });
-      canvas.addEventListener('mouseup', () => drawing = false);
-      canvas.addEventListener('mouseout', () => drawing = false);
-      canvas.addEventListener('mousemove', (e) => {
-        if (!drawing) return;
-        const { x, y } = getPosition(e);
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#000';
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-      });
+      const stroke = (x,y) => { ctx.lineWidth=2; ctx.lineCap='round'; ctx.strokeStyle='#000'; ctx.lineTo(x,y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x,y); };
 
-      canvas.addEventListener('touchstart', (e) => {
-        drawing = true;
-        e.preventDefault();
-        ctx.beginPath();
-      }, { passive: false });
+      canvas.addEventListener('mousedown', (e)=>{ if(e.button!==0) return; drawing=true; ctx.beginPath(); });
+      canvas.addEventListener('mouseup', ()=> drawing=false);
+      canvas.addEventListener('mouseout', ()=> drawing=false);
+      canvas.addEventListener('mousemove', (e)=>{ if(!drawing) return; const {x,y}=getPos(e); stroke(x,y); });
 
-      canvas.addEventListener('touchend', () => drawing = false);
-      canvas.addEventListener('touchcancel', () => drawing = false);
-      canvas.addEventListener('touchmove', (e) => {
-        if (!drawing) return;
-        const { x, y } = getPosition(e);
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#000';
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-      }, { passive: false });
+      canvas.addEventListener('touchstart', (e)=>{ drawing=true; e.preventDefault(); ctx.beginPath(); }, {passive:false});
+      canvas.addEventListener('touchend', ()=> drawing=false);
+      canvas.addEventListener('touchcancel', ()=> drawing=false);
+      canvas.addEventListener('touchmove', (e)=>{ if(!drawing) return; const {x,y}=getPos(e); stroke(x,y); }, {passive:false});
     }
 
-    function clearSignature() {
+    function clearSignature(){
       const canvas = document.getElementById('signatureCanvas');
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
     }
   </script>
 </body>
