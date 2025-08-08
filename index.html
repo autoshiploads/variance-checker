@@ -15,6 +15,7 @@
       #output, #output * { visibility:visible; }
       #output { position:absolute; left:0; top:0; width:90%; padding:40px; }
       #clearSignatureBtn, #resetBtn { display:none; }
+      #signoffText { display:none; }
       #signatureCanvas { width:30% !important; max-width:300px; min-width:200px; }
     }
 
@@ -168,7 +169,7 @@
             <h2>Variance Check</h2>
             ${generateTable(results, {pluKey, descKey, expectKey, countKey})}
             <div id="signoff">
-              <p><em>You can sign digitally below or leave blank and sign manually after printing.</em></p>
+              <p id="signoffText"><em>You can sign digitally below or leave blank and sign manually after printing.</em></p>
               <label><input type="checkbox"> By signing you confirm you have checked all above variances</label>
               <br/><br/>
               <label>Signature:</label><br/>
